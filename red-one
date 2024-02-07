@@ -1,0 +1,44 @@
+import requests
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# Функция для обработки команды /start
+def start(update, context):
+    update.message.reply_text("Привіт! Я бот, який шукає інформацію за ключовими словами. Просто відправ мені слово, і я знайду відповідну інформацію на Вікіпедії.")
+
+# Функция для обработки текстовых сообщений
+def search_wikipedia(update, context):
+    query = update.message.text
+    # Формирование URL для запроса к Wikipedia API
+    url = f"https://uk.wikipedia.org/api/rest_v1/page/summary/{query}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        if 'extract' in data:
+            update.message.reply_text(data['extract'])
+        else:
+            update.message.reply_text("Інформацію за вашим запитом не знайдено.")
+    else:
+        update.message.reply_text("Під час обробки вашого запиту виникла помилка.")
+
+# Функция для обработки неизвестных команд
+def unknown(update, context):
+    update.message.reply_text("Вибачте, я не розумію цю команду.")
+
+def main():
+    # Инициализация бота с токеном
+    updater = Updater("YOUR_TELEGRAM_BOT_TOKEN", use_context=True)
+
+    # Получение диспетчера для зарегистрированных обработчиков
+    dp = updater.dispatcher
+
+    # Регистрация обработчиков
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, search_wikipedia))
+    dp.add_handler(MessageHandler(Filters.command, unknown))
+
+    # Запуск бота
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
